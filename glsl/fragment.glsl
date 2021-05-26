@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 // Set by JS
 #define WIDTH %width%
