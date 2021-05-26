@@ -10,14 +10,19 @@ async function initGL() {
 }
 
 function f() {
-	let w = window.innerWidth - 50;
-	let h = window.innerHeight - 35;
+	const param = new URLSearchParams(window.location.search);
+	let offsetX = i(param.get('x')) || Math.floor(Math.random() * 2 ** 20);
+	let offsetY = i(param.get('y')) || Math.floor(Math.random() * 2 ** 20);
+	let w = i(param.get('w')) || window.innerWidth - 50;
+	let h = i(param.get('h')) || window.innerHeight - 35;
 
 	if (w < h) {
 		h = w;
 	} else {
 		w = h;
 	}
+
+	console.log(`w=${w}&h=${h}&x=${offsetX}&y=${offsetY}`);
 
 	gl.canvas.width = w;
 	gl.canvas.height = h;
@@ -27,8 +32,8 @@ function f() {
 	shaders.fragment = setShaderAttributes(shaders.fragment, {
 		width: `${canvas.width}.0`,
 		height: `${canvas.height}.0`,
-		offsetX: `${Math.floor(Math.random() * 2 ** 20)}.0`,
-		offsetY: `${Math.floor(Math.random() * 2 ** 20)}.0`
+		offsetX: `${offsetX}.0`,
+		offsetY: `${offsetY}.0`
 	});
 
 	const vertexShader = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
@@ -46,6 +51,10 @@ function f() {
 	gl.useProgram(program);
 	gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 	gl.useProgram(null);
+}
+
+function i(n) {
+	return parseInt(n);
 }
 
 async function getShaders() {
