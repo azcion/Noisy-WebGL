@@ -1,0 +1,11 @@
+{
+	"name": "webgl-noise",
+	"version": "1.0.0",
+	"description": "",
+	"main": "app.js",
+	"scripts": {
+		"dev": "echo 'hi'"
+	},
+	"author": "",
+	"license": "ISC"
+}

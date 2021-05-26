@@ -1,0 +1,14 @@
+body {
+	background-color: black;
+	text-align: center;
+}
+
+path {
+	stroke: white;
+}
+
+#reload {
+	position: absolute;
+	width: 100px;
+	max-width: 100px;
+}
