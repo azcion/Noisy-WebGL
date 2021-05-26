@@ -3,7 +3,8 @@ precision mediump float;
 // Set by JS
 #define WIDTH %width%
 #define HEIGHT %height%
-#define SEED %seed%
+#define OFFSETX %offsetx%
+#define OFFSETY %offsety%
 
 #define M289 0.00346020761 // 1 / 289
 #define K 0.142857142857 // 1 / 7
@@ -110,7 +111,7 @@ void main() {
 	vec2 uv = gl_FragCoord.xy;
 	float xr = uv.x / WIDTH;
 	float yr = uv.y / HEIGHT;
-	uv += SEED;
+	uv = vec2(uv.x + OFFSETX, uv.y + OFFSETY);
 	float d = 1.125;
 	float f = (1.0 - xr * xr + xr - d) + (1.0 - yr * yr + yr - d);
 	f *= 7.5;

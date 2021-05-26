@@ -27,7 +27,8 @@ function f() {
 	shaders.fragment = setShaderAttributes(shaders.fragment, {
 		width: `${canvas.width}.0`,
 		height: `${canvas.height}.0`,
-		seed: `${Math.floor(Math.random() * 2 ** 20)}.0`
+		offsetX: `${Math.floor(Math.random() * 2 ** 20)}.0`,
+		offsetY: `${Math.floor(Math.random() * 2 ** 20)}.0`
 	});
 
 	const vertexShader = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
@@ -65,7 +66,8 @@ async function getFile(path) {
 function setShaderAttributes(shader, attr) {
 	shader = shader.replace(/%width%/, attr.width || '256.0');
 	shader = shader.replace(/%height%/, attr.height || '256.0');
-	shader = shader.replace(/%seed%/, attr.seed || '0.0');
+	shader = shader.replace(/%offsetx%/, attr.offsetX || '0.0');
+	shader = shader.replace(/%offsety%/, attr.offsetY || '0.0');
 
 	return shader;
 }
