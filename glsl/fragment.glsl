@@ -114,24 +114,12 @@ float sumOctaves(vec2 uv, float persistence, float scale) {
 }
 
 vec4 getColor(float v) {
-	#define N 7
+	#define N %ncolors%
 	vec4 COL[N];
-	COL[0] = vec4(.04, .32, .68, 1.); // Blue
-	COL[1] = vec4(.23, .51, .83, 1.); // Light blue
-	COL[2] = vec4(.61, .89, .99, 1.); // Bright blue
-	COL[3] = vec4(.75, .65, .45, 1.); // Sandy
-	COL[4] = vec4(.31, .45, .14, 1.); // Green
-	COL[5] = vec4(.71, .73, .47, 1.); // Yellow green
-	COL[6] = vec4(.94, .93, .91, 1.); // White
+	%colors%
 
 	float POS[N];
-	POS[0] = 0.;
-	POS[1] = .15;
-	POS[2] = .20;
-	POS[3] = .25;
-	POS[4] = .33;
-	POS[5] = .70;
-	POS[6] = .80;
+	%positions%
 
 	if (v <= POS[0]) {
 		return COL[0];
@@ -168,7 +156,7 @@ void main() {
 	if (f > 0.) {
 		float a = 1. - cellular(uv.xy / MASS);
 		float b = sumOctaves(uv.xy, PERSISTENCE, FREQUENCY);
-		v = (a * 2.0) * b - .5;
+		v = (a * 2.) * b - .5;
 	}
 
 	v = v * f - .6;

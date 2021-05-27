@@ -33,24 +33,50 @@ const _params = {
 	water: 'wt'
 };
 
+// prettier-ignore
+const _gradients = {
+	colors: [
+		[0.04, 0.32, 0.68],
+		[0.23, 0.51, 0.83],
+		[0.61, 0.89, 0.99],
+		[0.75, 0.65, 0.45],
+		[0.31, 0.45, 0.14],
+		[0.71, 0.73, 0.47],
+		[0.94, 0.93, 0.91]
+	],
+	positions: [
+		0,
+		0.15,
+		0.20,
+		0.24,
+		0.33,
+		0.70,
+		0.80
+	]
+};
+
 async function initGL() {
 	const shaders = await getShaders();
 	_shadersTemplate = { ...shaders };
-	const vertexShader = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
-	_shadersCompiled.vertex = vertexShader;
+	_shadersCompiled.vertex = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
 
 	f();
 }
 
 function f() {
-	const A = getAttributes();
-	gl.canvas.width = A.width;
-	gl.canvas.height = A.height;
+	const attributes = getAttributes();
+	gl.canvas.width = attributes.width;
+	gl.canvas.height = attributes.height;
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	const fragment = setShaderAttributes(_shadersTemplate.fragment, A);
-	const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragment);
-	const program = createProgram(gl, _shadersCompiled.vertex, fragmentShader);
+	const shaderConfig = {
+		attributes: attributes,
+		gradients: _gradients
+	};
+
+	const fragment = configureShader(_shadersTemplate.fragment, shaderConfig);
+	_shadersCompiled.fragment = createShader(gl, gl.FRAGMENT_SHADER, fragment);
+	const program = createProgram(gl, _shadersCompiled.vertex, _shadersCompiled.fragment);
 
 	const positionBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -63,6 +89,21 @@ function f() {
 	gl.useProgram(program);
 	gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 	gl.useProgram(null);
+}
+
+function configureShader(shader, config) {
+	for (const option in config) {
+		switch (option) {
+			case 'gradients':
+				shader = setShaderGradients(shader, config.gradients);
+				break;
+			case 'attributes':
+				shader = setShaderAttributes(shader, config.attributes);
+				break;
+		}
+	}
+
+	return shader;
 }
 
 function getAttributes() {
@@ -107,11 +148,11 @@ function getAttributes() {
 		offsety: y.toFixed(0),
 		square: square,
 		radial: radial,
-		mass: mass.toFixed(0),
-		octaves: octaves.toFixed(0),
-		persistence: persistence.toFixed(2),
-		frequency: frequency.toFixed(6),
-		water: water.toFixed(2)
+		mass: formatShaderFloat(mass),
+		octaves: formatShaderFloat(octaves),
+		persistence: formatShaderFloat(persistence),
+		frequency: formatShaderFloat(frequency),
+		water: formatShaderFloat(water)
 	};
 
 	console.log(joinAttributes(attributes));
@@ -136,19 +177,56 @@ function joinAttributes(attributes) {
 }
 
 function setShaderAttributes(shader, attributes) {
-	function getIfValid(value) {
-		if (value == null || isNaN(value) || value === 'NaN') {
-			return false;
-		}
-
-		return value.toString();
-	}
-
 	for (const a in _attributes) {
 		shader = shader.replace(`%${a}%`, getIfValid(attributes[a]) || _attributes[a]);
 	}
 
 	return shader;
+}
+
+function getIfValid(value) {
+	if (value == null || isNaN(value) || value === 'NaN') {
+		return false;
+	}
+
+	return value.toString();
+}
+
+function setShaderGradients(shader, gradients) {
+	let colorsCode = '';
+	let positionsCode = '';
+
+	for (let i = 0; i < gradients.colors.length; ++i) {
+		const c = gradients.colors[i].map(x => formatShaderFloat(x));
+		const p = formatShaderFloat(gradients.positions[i]);
+		colorsCode += `COL[${i}] = vec4(${c[0]}, ${c[1]}, ${c[2]}, 1.);\n\t`;
+		positionsCode += `POS[${i}] = ${p};\n\t`;
+	}
+
+	shader = shader.replace(/%ncolors%/, gradients.colors.length);
+	shader = shader.replace(/%colors%/, colorsCode);
+	shader = shader.replace(/%positions%/, positionsCode);
+
+	return shader;
+}
+
+function formatShaderFloat(number) {
+	let f = number.toString();
+
+	// Number is an integer
+	if (!f.includes('.')) {
+		return f + '.';
+	}
+
+	const components = f.split('.');
+
+	// Number doesn't start with a zero
+	if (components[0] !== '0') {
+		return f;
+	}
+
+	// Number starts with a zero
+	return '.' + components[1];
 }
 
 async function getShaders() {
