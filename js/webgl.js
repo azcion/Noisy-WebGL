@@ -9,6 +9,7 @@ const _attributes = {
 	height: 256,
 	offsetx: 0,
 	offsety: 0,
+	square: false,
 	radial: true,
 	mass: 150,
 	octaves: 6,
@@ -23,6 +24,7 @@ const _params = {
 	height: 'h',
 	offsetx: 'x',
 	offsety: 'y',
+	square: 'sq',
 	radial: 'r',
 	mass: 'm',
 	octaves: 'o',
@@ -73,8 +75,9 @@ function getAttributes() {
 	// Width and height
 	let w = i(p('width')) || window.innerWidth - 50;
 	let h = i(p('height')) || window.innerHeight - 35;
+	const square = b(p('square')) || false;
 
-	if (!w || !h) {
+	if (square) {
 		// Force square using the shortest side
 		if (w < h) {
 			h = w;
@@ -102,6 +105,7 @@ function getAttributes() {
 		height: h.toFixed(0),
 		offsetx: x.toFixed(0),
 		offsety: y.toFixed(0),
+		square: square,
 		radial: radial,
 		mass: mass.toFixed(0),
 		octaves: octaves.toFixed(0),
