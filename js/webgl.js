@@ -1,44 +1,54 @@
 const gl = document.getElementById('canvas').getContext('webgl');
 initGL();
-let _shaders;
+let _shadersTemplate;
+const _shadersCompiled = {};
+
+// Shader attributes with default values
+const _attributes = {
+	width: 256,
+	height: 256,
+	offsetx: 0,
+	offsety: 0,
+	radial: true,
+	mass: 150,
+	octaves: 6,
+	persistence: 0.6,
+	frequency: 0.005,
+	water: 0.5
+};
+
+// Alternative shorter param names
+const _params = {
+	width: 'w',
+	height: 'h',
+	offsetx: 'x',
+	offsety: 'y',
+	radial: 'r',
+	mass: 'm',
+	octaves: 'o',
+	persistence: 'p',
+	frequency: 'f',
+	water: 'wt'
+};
 
 async function initGL() {
 	const shaders = await getShaders();
-	_shaders = { ...shaders };
+	_shadersTemplate = { ...shaders };
+	const vertexShader = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
+	_shadersCompiled.vertex = vertexShader;
 
 	f();
 }
 
 function f() {
-	const param = new URLSearchParams(window.location.search);
-	let offsetX = i(param.get('x')) || Math.floor(Math.random() * 2 ** 20);
-	let offsetY = i(param.get('y')) || Math.floor(Math.random() * 2 ** 20);
-	let w = i(param.get('w')) || window.innerWidth - 50;
-	let h = i(param.get('h')) || window.innerHeight - 35;
-
-	if (w < h) {
-		h = w;
-	} else {
-		w = h;
-	}
-
-	console.log(`w=${w}&h=${h}&x=${offsetX}&y=${offsetY}`);
-
-	gl.canvas.width = w;
-	gl.canvas.height = h;
+	const A = getAttributes();
+	gl.canvas.width = A.width;
+	gl.canvas.height = A.height;
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-	let shaders = { ..._shaders };
-	shaders.fragment = setShaderAttributes(shaders.fragment, {
-		width: `${canvas.width}.0`,
-		height: `${canvas.height}.0`,
-		offsetX: `${offsetX}.0`,
-		offsetY: `${offsetY}.0`
-	});
-
-	const vertexShader = createShader(gl, gl.VERTEX_SHADER, shaders.vertex);
-	const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, shaders.fragment);
-	const program = createProgram(gl, vertexShader, fragmentShader);
+	const fragment = setShaderAttributes(_shadersTemplate.fragment, A);
+	const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragment);
+	const program = createProgram(gl, _shadersCompiled.vertex, fragmentShader);
 
 	const positionBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -53,8 +63,88 @@ function f() {
 	gl.useProgram(null);
 }
 
-function i(n) {
-	return parseInt(n);
+function getAttributes() {
+	const params = new URLSearchParams(window.location.search);
+	const p = s => params.get(s) || params.get(_params[s]);
+	const i = n => parseInt(n);
+	const d = n => parseFloat(n);
+	const b = s => s && (s === 'true' || s === '1');
+
+	// Width and height
+	let w = i(p('width')) || window.innerWidth - 50;
+	let h = i(p('height')) || window.innerHeight - 35;
+
+	if (!w || !h) {
+		// Force square using the shortest side
+		if (w < h) {
+			h = w;
+		} else {
+			w = h;
+		}
+	}
+
+	// Seed
+	const x = i(p('offsetx')) || Math.floor(Math.random() * 2 ** 20);
+	const y = i(p('offsety')) || Math.floor(Math.random() * 2 ** 20);
+
+	// World generation
+	const radial = b(p('radial'));
+	const mass = i(p('mass'));
+	const octaves = i(p('octaves'));
+	const persistence = d(p('persistence'));
+	const frequency = d(p('frequency'));
+
+	// Water level
+	const water = d(p('water'));
+
+	const attributes = {
+		width: w.toFixed(0),
+		height: h.toFixed(0),
+		offsetx: x.toFixed(0),
+		offsety: y.toFixed(0),
+		radial: radial,
+		mass: mass.toFixed(0),
+		octaves: octaves.toFixed(0),
+		persistence: persistence.toFixed(2),
+		frequency: frequency.toFixed(6),
+		water: water.toFixed(2)
+	};
+
+	console.log(joinAttributes(attributes));
+
+	return attributes;
+}
+
+function joinAttributes(attributes) {
+	let params = [];
+
+	for (const a in attributes) {
+		const value = attributes[a];
+
+		if (value == null || value === 'NaN' || value === _attributes[a]) {
+			continue;
+		}
+
+		params.push(`${_params[a]}=${value}`);
+	}
+
+	return '?' + params.join('&');
+}
+
+function setShaderAttributes(shader, attributes) {
+	function getIfValid(value) {
+		if (value == null || isNaN(value) || value === 'NaN') {
+			return false;
+		}
+
+		return value.toString();
+	}
+
+	for (const a in _attributes) {
+		shader = shader.replace(`%${a}%`, getIfValid(attributes[a]) || _attributes[a]);
+	}
+
+	return shader;
 }
 
 async function getShaders() {
@@ -70,15 +160,6 @@ async function getShaders() {
 
 async function getFile(path) {
 	return (await fetch(path, { method: 'GET' })).text();
-}
-
-function setShaderAttributes(shader, attr) {
-	shader = shader.replace(/%width%/, attr.width || '256.0');
-	shader = shader.replace(/%height%/, attr.height || '256.0');
-	shader = shader.replace(/%offsetx%/, attr.offsetX || '0.0');
-	shader = shader.replace(/%offsety%/, attr.offsetY || '0.0');
-
-	return shader;
 }
 
 function createShader(gl, type, source) {
